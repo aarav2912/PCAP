@@ -3,10 +3,12 @@ project(CUDADehazing CUDA CXX)
 
 set(CMAKE_CXX_STANDARD 17)
 set(CMAKE_CUDA_STANDARD 17)
-set(CMAKE_CUDA_ARCHITECTURES 60 61 70 75 80 86 89)
+if(NOT DEFINED CMAKE_CUDA_ARCHITECTURES)
+    set(CMAKE_CUDA_ARCHITECTURES 75)
+endif()
 
 find_package(OpenCV REQUIRED COMPONENTS core imgcodecs imgproc highgui)
-find_package(OpenMP REQUIRED)
+find_package(OpenMP REQUIRED COMPONENTS CXX)
 find_package(CUDAToolkit REQUIRED)
 
 include_directories(

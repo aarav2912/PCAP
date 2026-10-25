@@ -1,5 +1,5 @@
 #!/bin/bash
-# run_benchmark.sh — Quick benchmark runner
+# run_benchmark.sh - Quick benchmark runner
 set -e
 ROOT="$(cd "$(dirname "${BASH_SOURCE[0]}")/.." && pwd)"
 BUILD="$ROOT/build"
@@ -13,8 +13,13 @@ if [ ! -f "$BUILD/benchmark" ]; then
 fi
 
 if [ ! -d "$DATA/hazy" ]; then
-    echo "Dataset not found. Run: python data/download_reside.py --subset sots"
-    exit 1
+    if [ -d "$ROOT/data/sample/hazy" ]; then
+        echo "[Info] SOTS indoor not found; using generated sample dataset at data/sample"
+        DATA="$ROOT/data/sample"
+    else
+        echo "Dataset not found. Run: python data/download_reside.py --subset sample (or --subset sots)"
+        exit 1
+    fi
 fi
 
 mkdir -p "$RESULTS"

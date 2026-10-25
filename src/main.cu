@@ -37,11 +37,10 @@ void printGpuInfo() {
     int ndev = 0; cudaGetDeviceCount(&ndev);
     if (ndev == 0) { std::cout << "[CUDA] No GPU found.\n"; return; }
     cudaDeviceProp prop; cudaGetDeviceProperties(&prop, 0);
-    printf("[GPU] %s | Compute %d.%d | %.0f MB VRAM | %d SMs | %.1f GHz\n",
+    printf("[GPU] %s | Compute %d.%d | %.0f MB VRAM | %d SMs\n",
            prop.name, prop.major, prop.minor,
            prop.totalGlobalMem / 1e6,
-           prop.multiProcessorCount,
-           prop.clockRate / 1e6);
+           prop.multiProcessorCount);
 }
 
 // --- Main ---------------------------------------------------------------------

@@ -50,7 +50,7 @@ def load_data(csv_path: Path) -> pd.DataFrame:
 
 
 def plot_timing_comparison(df: pd.DataFrame, out_dir: Path):
-    """Bar chart with error bars: mean ± std timing per mode."""
+    """Bar chart with error bars: mean +/- std timing per mode."""
     modes = df["mode"].unique()
     means = [df[df["mode"]==m]["time_ms"].mean() for m in modes]
     stds  = [df[df["mode"]==m]["time_ms"].std()  for m in modes]
@@ -63,7 +63,7 @@ def plot_timing_comparison(df: pd.DataFrame, out_dir: Path):
         capsize=6, width=0.5, edgecolor="black", linewidth=0.8
     )
     ax.set_ylabel("Processing Time (ms)", fontsize=12)
-    ax.set_title("Image Dehazing — CPU vs OpenMP vs CUDA\nAverage Processing Time per Image", fontsize=13)
+    ax.set_title("Image Dehazing - CPU vs OpenMP vs CUDA\nAverage Processing Time per Image", fontsize=13)
     ax.set_yscale("log")
     ax.yaxis.set_major_formatter(plt.FuncFormatter(lambda v, _: f"{v:.1f}"))
 
@@ -79,7 +79,7 @@ def plot_timing_comparison(df: pd.DataFrame, out_dir: Path):
             if cpu_mean and m != "cpu":
                 speedup = cpu_mean / val
                 idx = list(modes).index(m)
-                ax.annotate(f"{speedup:.1f}×\nfaster",
+                ax.annotate(f"{speedup:.1f}x\nfaster",
                             xy=(bars[idx].get_x() + bars[idx].get_width()/2, val*0.5),
                             ha="center", va="center", fontsize=9,
                             color="white", fontweight="bold")
@@ -144,9 +144,9 @@ def generate_speedup_report(df: pd.DataFrame, out_dir: Path):
     for row, m in zip(rows, modes):
         if cpu_avg and m != "cpu":
             val = df[df["mode"]==m]["time_ms"].mean()
-            row["Speedup vs CPU"] = f"{cpu_avg/val:.1f}×"
+            row["Speedup vs CPU"] = f"{cpu_avg/val:.1f}x"
         else:
-            row["Speedup vs CPU"] = "1× (baseline)"
+            row["Speedup vs CPU"] = "1x (baseline)"
 
     report_df = pd.DataFrame(rows)
     txt_path = out_dir / "speedup_report.txt"
@@ -159,8 +159,8 @@ def generate_speedup_report(df: pd.DataFrame, out_dir: Path):
         f.write(report_df.to_string(index=False))
         f.write("\n\n")
         f.write("Key:\n")
-        f.write("  PSNR — Peak Signal-to-Noise Ratio (higher = better, ~16-19 dB for DCP)\n")
-        f.write("  SSIM — Structural Similarity Index  (higher = better, ~0.81-0.84 for DCP)\n")
+        f.write("  PSNR - Peak Signal-to-Noise Ratio (higher = better, ~16-19 dB for DCP)\n")
+        f.write("  SSIM - Structural Similarity Index  (higher = better, ~0.81-0.84 for DCP)\n")
         f.write("  All three modes produce IDENTICAL output (same algorithm, same quality).\n")
         f.write("  Speedup measures pure COMPUTATION SPEED advantage of GPU parallelism.\n")
 
@@ -187,7 +187,7 @@ def plot_visual_grid(df: pd.DataFrame, results_dir: Path, out_dir: Path, n=6):
         return
 
     fig, axes = plt.subplots(2, len(files), figsize=(3*len(files), 6))
-    fig.suptitle("Image Dehazing Results — CUDA DCP\nTop: Hazy Input | Bottom: Dehazed Output",
+    fig.suptitle("Image Dehazing Results - CUDA DCP\nTop: Hazy Input | Bottom: Dehazed Output",
                  fontsize=12)
 
     for j, f in enumerate(files):

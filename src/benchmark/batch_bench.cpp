@@ -59,6 +59,15 @@ std::vector<ImageResult> runBenchmark(
 
     GpuDehazeBuffers cuda_buf = {};
 
+    // Build lookup maps for ground truth images (by full filename and by stem/prefix)
+    std::map<std::string, std::string> gt_by_name;
+    std::map<std::string, std::string> gt_by_stem;
+    for (const auto& g : gt_paths) {
+        fs::path gp(g);
+        gt_by_name[gp.filename().string()] = g;
+        gt_by_stem[gp.stem().string()] = g;
+    }
+
     // CUDA warm-up: process first image to initialise GPU context
     if (mode == "cuda" && !hazy_paths.empty()) {
         cv::Mat warmup = loadBGRFloat(hazy_paths[0]);
@@ -92,26 +101,54 @@ std::vector<ImageResult> runBenchmark(
             t_ms = gt.elapsedMs();
         }
 
-        // Metrics
+        // Metrics: match ground truth by filename, prefix (e.g. 1400_1 -> 1400), or index fallback
         double psnr = 0.0, ssim = 0.0;
-        if (i < gt_paths.size()) {
+        std::string matched_gt = "";
+        fs::path p(hazy_paths[i]);
+        std::string h_fname = p.filename().string();
+        std::string h_stem = p.stem().string();
+
+        if (gt_by_name.count(h_fname)) {
+            matched_gt = gt_by_name[h_fname];
+        } else if (gt_by_stem.count(h_stem)) {
+            matched_gt = gt_by_stem[h_stem];
+        } else {
+            // Check prefix before '_' (e.g. 1400_1 -> 1400)
+            auto underscore_pos = h_stem.find('_');
+            if (underscore_pos != std::string::npos) {
+                std::string prefix = h_stem.substr(0, underscore_pos);
+                if (gt_by_stem.count(prefix)) {
+                    matched_gt = gt_by_stem[prefix];
+                }
+            }
+        }
+        if (matched_gt.empty() && i < gt_paths.size()) {
+            matched_gt = gt_paths[i];
+        }
+
+        if (!matched_gt.empty()) {
             try {
-                cv::Mat gt = loadBGRFloat(gt_paths[i]);
+                cv::Mat gt = loadBGRFloat(matched_gt);
                 psnr = computePSNR(dehazed, gt);
                 ssim = computeSSIM(dehazed, gt);
             } catch (...) {}
         }
 
         // Save output
-        fs::path p(hazy_paths[i]);
         std::string out_file = out_dir + "/" + mode + "/" + p.filename().string();
         try { saveFloat(out_file, dehazed); } catch (...) {}
 
         results.push_back({ p.filename().string(), t_ms, psnr, ssim });
 
-        printf("[%s] %3zu/%-3zu  %-30s  %7.1f ms  PSNR=%5.2f dB  SSIM=%.4f\n",
-               mode.c_str(), i+1, hazy_paths.size(),
-               p.filename().string().c_str(), t_ms, psnr, ssim);
+        if (!matched_gt.empty()) {
+            printf("[%s] %3zu/%-3zu  %-30s  %7.1f ms  PSNR=%5.2f dB  SSIM=%.4f\n",
+                   mode.c_str(), i+1, hazy_paths.size(),
+                   p.filename().string().c_str(), t_ms, psnr, ssim);
+        } else {
+            printf("[%s] %3zu/%-3zu  %-30s  %7.1f ms\n",
+                   mode.c_str(), i+1, hazy_paths.size(),
+                   p.filename().string().c_str(), t_ms);
+        }
     }
 
     if (mode == "cuda") cuda_buf.free();
@@ -130,11 +167,11 @@ std::vector<ImageResult> runBenchmark(
                             [](auto& a, auto& b){ return a.time_ms < b.time_ms; })->time_ms;
 
         printf("\n+------------------------------------------------------+\n");
-        printf("¦  Mode: %-6s | N=%3zu images                          ¦\n",
+        printf("|  Mode: %-6s | N=%3zu images                          |\n",
                mode.c_str(), results.size());
-        printf("¦  Time: avg=%-6.1f ms  min=%-6.1f ms  max=%-6.1f ms  ¦\n",
+        printf("|  Time: avg=%-6.1f ms  min=%-6.1f ms  max=%-6.1f ms  |\n",
                avg_t, min_t, max_t);
-        printf("¦  PSNR: avg=%-5.2f dB  |  SSIM: avg=%-6.4f          ¦\n",
+        printf("|  PSNR: avg=%-5.2f dB  |  SSIM: avg=%-6.4f          |\n",
                avg_psnr, avg_ssim);
         printf("+------------------------------------------------------+\n\n");
     }
@@ -166,7 +203,7 @@ int main(int argc, char** argv) {
     int limit            = args.count("--limit")  ? std::stoi(args["--limit"])   : INT_MAX;
 
     printf("+----------------------------------------------------------+\n");
-    printf("¦           CUDA Image Dehazing Benchmark                  ¦\n");
+    printf("|           CUDA Image Dehazing Benchmark                  |\n");
     printf("+----------------------------------------------------------+\n");
     printf("Hazy dir : %s\n", hazy_dir.c_str());
     printf("GT dir   : %s\n", gt_dir.c_str());
@@ -184,9 +221,14 @@ int main(int argc, char** argv) {
 
     // Apply limit
     if ((int)hazy_paths.size() > limit) hazy_paths.resize(limit);
-    if ((int)gt_paths.size()   > limit) gt_paths.resize(limit);
+    if (!gt_paths.empty() && (int)gt_paths.size() > limit) gt_paths.resize(limit);
 
-    printf("Found %zu hazy / %zu GT images\n\n", hazy_paths.size(), gt_paths.size());
+    if (gt_paths.empty()) {
+        printf("Found %zu hazy images (no GT images found; PSNR/SSIM evaluation will be skipped)\n\n",
+               hazy_paths.size());
+    } else {
+        printf("Found %zu hazy / %zu GT images\n\n", hazy_paths.size(), gt_paths.size());
+    }
 
     std::string csv_path = out_dir + "/benchmark.csv";
     fs::create_directories(out_dir);
@@ -198,7 +240,7 @@ int main(int argc, char** argv) {
     else               modes_to_run = {mode};
 
     for (auto& m : modes_to_run) {
-        printf("??? Running mode: %s ??????????????????????????????????\n\n", m.c_str());
+        printf("=== Running mode: %s ==================================\n\n", m.c_str());
         auto results = runBenchmark(m, hazy_paths, gt_paths, out_dir, nthreads);
         saveCSV(csv_path, m, results);
     }

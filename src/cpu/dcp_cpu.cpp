@@ -1,7 +1,7 @@
 /*
  * dcp_cpu.cpp
  * Sequential (single-threaded) Dark Channel Prior dehazing.
- * This is the baseline reference implementation — correctness over speed.
+ * This is the baseline reference implementation - correctness over speed.
  *
  * Algorithm:  He et al. "Single Image Haze Removal Using Dark Channel Prior"
  *             CVPR 2009 / TPAMI 2011
@@ -51,7 +51,7 @@ cv::Vec3f estimateAtmLight(const cv::Mat& img, const cv::Mat& dc) {
     for (int i = 0; i < N; ++i)
         vals[i] = { dc.at<float>(i/img.cols, i%img.cols), i };
 
-    // Partial sort — only need top-K
+    // Partial sort - only need top-K
     std::partial_sort(vals.begin(), vals.begin()+topK, vals.end(),
                       [](auto& a, auto& b){ return a.first > b.first; });
 

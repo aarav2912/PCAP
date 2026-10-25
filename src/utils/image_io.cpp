@@ -14,8 +14,12 @@ std::vector<std::string> collectImagePaths(const std::string& dir,
                                            const std::vector<std::string>& exts)
 {
     std::vector<std::string> paths;
-    for (auto& entry : fs::recursive_directory_iterator(dir)) {
-        if (!entry.is_regular_file()) continue;
+    std::error_code ec;
+    if (!fs::exists(dir, ec) || ec) return paths;
+
+    for (auto& entry : fs::recursive_directory_iterator(dir, fs::directory_options::skip_permission_denied, ec)) {
+        if (ec) break;
+        if (!entry.is_regular_file(ec)) continue;
         std::string ext = entry.path().extension().string();
         std::transform(ext.begin(), ext.end(), ext.begin(), ::tolower);
         for (auto& e : exts) {

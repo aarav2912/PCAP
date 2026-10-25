@@ -3,9 +3,9 @@
  * CUDA Kernel 2: Atmospheric Light Estimation via parallel reduction.
  *
  * Algorithm:
- *   Step A — GPU histogram over dark channel to find the top 0.1% threshold
+ *   Step A - GPU histogram over dark channel to find the top 0.1% threshold
  *             using atomicAdd into 256-bin histogram.
- *   Step B — Parallel reduction over all pixels above the threshold to
+ *   Step B - Parallel reduction over all pixels above the threshold to
  *             find the one with the highest luminance in the hazy image.
  *
  * Optimization techniques used:

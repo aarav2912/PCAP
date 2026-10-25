@@ -4,9 +4,9 @@
 
 ## Algorithm
 
-**Dark Channel Prior (DCP)** — He et al., CVPR 2009 / TPAMI 2011
+**Dark Channel Prior (DCP)** - He et al., CVPR 2009 / TPAMI 2011
 
-Physics model: `I(x) = J(x)·t(x) + A·(1 - t(x))`
+Physics model: `I(x) = J(x)*t(x) + A*(1 - t(x))`
 
 Recovery: `J(x) = (I(x) - A) / max(t(x), t_min) + A`
 
@@ -35,32 +35,33 @@ Recovery: `J(x) = (I(x) - A) / max(t(x), t_min) + A`
 ```
 data/SOTS/
   indoor/
-    hazy/     ? 500 hazy test images
-    gt/       ? 500 clean ground truth
+    hazy/     - 500 hazy test images
+    gt/       - 500 clean ground truth
   outdoor/
     hazy/
     gt/
-data/ITS/     ? 13,990 hazy training images (optional, for robustness testing)
+data/ITS/     - 13,990 hazy training images (optional, for robustness testing)
 ```
 
-### Download
+### Dataset Options
 
 ```bash
-# Download SOTS test set only (~300 MB, recommended to start)
-python data/download_reside.py --subset sots
+# 1. Instant synthetic sample test set (zero large download, ready immediately)
+python data/download_reside.py --subset sample
 
-# Download both ITS + SOTS
-python data/download_reside.py --subset all
+# 2. Download SOTS via Kaggle CLI (requires ~/.kaggle/kaggle.json)
+python data/download_reside.py --subset sots --source kaggle
 
-# Verify dataset structure
+# 3. Download using custom direct URL or mirror
+python data/download_reside.py --subset sots --url <DIRECT_ZIP_URL>
+
+# 4. Verify dataset structure
 python data/download_reside.py --verify
 ```
 
-**If Dropbox download fails**, download manually:
-- SOTS: https://bit.ly/2XZH498
-- ITS:  https://bit.ly/3iwHmh0
-
-Place `.zip` in `data/` and run `python data/download_reside.py --extract-only`
+If automated Dropbox download fails due to browser login / quota restrictions:
+- Download manually or use Kaggle: `balraj98/synthetic-objective-testing-set-sots-reside`
+- Place `SOTS.zip` into `data/` and run: `python data/download_reside.py --extract-only`
 
 ---
 
@@ -141,11 +142,11 @@ python scripts/report.py --csv results/benchmark.csv --out results/
 
 | Mode | PSNR (SOTS-Indoor) | SSIM | Speed (1080p) |
 |------|-------------------|------|--------------|
-| CPU Sequential | ~16–19 dB | ~0.81–0.84 | ~2–5 s |
-| OpenMP (8 cores) | same | same | ~0.4–1 s |
-| **CUDA (GPU)** | same | same | **~15–50 ms** |
+| CPU Sequential | ~16-19 dB | ~0.81-0.84 | ~2-5 s |
+| OpenMP (8 cores) | same | same | ~0.4-1 s |
+| **CUDA (GPU)** | same | same | **~15-50 ms** |
 
-All three modes produce **identical output** — same DCP algorithm, same results.
+All three modes produce **identical output** - same DCP algorithm, same results.
 The speedup is purely from **parallel computation**.
 
 > **Note:** DCP PSNR is lower than deep learning methods (FFA-Net: ~36 dB) because it is
@@ -161,29 +162,29 @@ cuda-dehazing/
 +-- CMakeLists.txt
 +-- README.md
 +-- data/
-¦   +-- download_reside.py
+|   +-- download_reside.py
 +-- include/
-¦   +-- utils.hpp          ? constants, timer, CUDA_CHECK
-¦   +-- dehazer.cuh        ? GPU buffer struct + kernel declarations
+|   +-- utils.hpp          - constants, timer, CUDA_CHECK
+|   +-- dehazer.cuh        - GPU buffer struct + kernel declarations
 +-- src/
-¦   +-- main.cu            ? CLI entry point
-¦   +-- pipeline/          ? 5 CUDA kernels
-¦   ¦   +-- dark_channel.cu
-¦   ¦   +-- atm_light.cu
-¦   ¦   +-- transmission.cu
-¦   ¦   +-- guided_filter.cu
-¦   ¦   +-- recovery.cu
-¦   +-- cpu/               ? CPU reference implementations
-¦   ¦   +-- dcp_cpu.cpp    (sequential)
-¦   ¦   +-- dcp_openmp.cpp (multi-core)
-¦   +-- utils/
-¦   ¦   +-- image_io.cpp   ? OpenMP batch loader
-¦   ¦   +-- metrics.cpp    ? PSNR/SSIM (OpenMP parallel)
-¦   +-- benchmark/
-¦       +-- batch_bench.cpp
+|   +-- main.cu            - CLI entry point
+|   +-- pipeline/          - 5 CUDA kernels
+|   |   +-- dark_channel.cu
+|   |   +-- atm_light.cu
+|   |   +-- transmission.cu
+|   |   +-- guided_filter.cu
+|   |   +-- recovery.cu
+|   +-- cpu/               - CPU reference implementations
+|   |   +-- dcp_cpu.cpp    (sequential)
+|   |   +-- dcp_openmp.cpp (multi-core)
+|   +-- utils/
+|   |   +-- image_io.cpp   - OpenMP batch loader
+|   |   +-- metrics.cpp    - PSNR/SSIM (OpenMP parallel)
+|   +-- benchmark/
+|       +-- batch_bench.cpp
 +-- scripts/
-¦   +-- report.py          ? Generates charts from CSV
-+-- results/               ? Output images + benchmark.csv
+|   +-- report.py          - Generates charts from CSV
++-- results/               - Output images + benchmark.csv
 ```
 
 ---

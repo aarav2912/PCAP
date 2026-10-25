@@ -11,7 +11,7 @@
  *     consecutive addresses in row-major layout).
  *   - __ldg() intrinsic for the transmission map ? routes through
  *     L1 texture cache (read-only path, avoids L1 eviction from writes).
- *   - __saturatef() for clamping to [0,1] — single hardware instruction.
+ *   - __saturatef() for clamping to [0,1] - single hardware instruction.
  */
 #include <cuda_runtime.h>
 #include <device_launch_parameters.h>
